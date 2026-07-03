@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pnpm vs npm workspaces: which to use for a monorepo (2026)</title>
+<meta name="description" content="Use pnpm once a monorepo grows past a few packages; npm workspaces is fine for a small repo. Why, and how the switch actually works.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/pnpm-vs-npm-workspaces/">
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{max-width:44rem;margin:0 auto;padding:2.5rem 1.25rem 5rem;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fff}
+@media(prefers-color-scheme:dark){body{color:#e6e6e6;background:#141414}}
+h1{font-size:1.7rem;line-height:1.25;margin:0 0 1rem}
+h2{font-size:1.2rem;margin:2.2rem 0 .6rem}
+p,li{margin:.7rem 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:rgba(127,127,127,.15);padding:.1em .35em;border-radius:4px}
+pre{background:rgba(127,127,127,.12);padding:1rem;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5}
+pre code{background:none;padding:0}
+a{color:#0b66c3}@media(prefers-color-scheme:dark){a{color:#5aa9ef}}
+.lead{font-size:1.08rem}
+.src{color:#666;font-size:.85rem;margin-top:3rem;border-top:1px solid rgba(127,127,127,.25);padding-top:1rem}
+@media(prefers-color-scheme:dark){.src{color:#999}}
+</style>
+</head>
+<body>
+<h1>pnpm vs npm workspaces: which should you use for a monorepo?</h1>
+
+<p class="lead">Use pnpm once your monorepo has more than a handful of packages; npm workspaces is the right call for a small repo where you'd rather not add another tool. The deciding factor isn't install speed, it's whether you want strict dependency isolation. pnpm gives every package only the dependencies it actually declared, so a package can't accidentally import something a sibling installed. npm workspaces hoists everything into one root <code>node_modules</code>, which is simpler until a phantom-dependency bug ships to production because a package used a library it never listed. pnpm also stores one copy of each package version in a global content-addressable store and hard-links it into each project, so a ten-package repo doesn't keep ten copies of React on disk. npm workspaces has shipped since npm v7 (October 2020) and covers the basics: shared install, symlinked local packages, one lockfile. It just stops there.</p>
+
+<h2>Where pnpm pulls ahead</h2>
+<p>Three things, in order of how often they actually matter:</p>
+<ul>
+<li><strong>Strictness.</strong> pnpm's <code>node_modules</code> is a symlink tree where each package sees only its declared deps. The class of bug where CI passes and prod breaks because of an undeclared dependency mostly disappears. This is the reason Vue, Vite, Nuxt, Astro, and Turborepo all default to pnpm, and the Vue team named it directly when they moved off Yarn.</li>
+<li><strong>Filtering.</strong> <code>--filter</code> scopes any command to one package and, optionally, everything that depends on it. Building or testing just the thing you touched is a one-liner.</li>
+<li><strong>Disk.</strong> The content-addressable store means a second project reusing the same dependency versions installs almost instantly and adds close to zero disk. On a large monorepo this is the difference between a few hundred megabytes and a few gigabytes.</li>
+</ul>
+
+<h2>What that looks like</h2>
+<pre><code>// pnpm-workspace.yaml
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# reference a local package by its workspace version
+# package.json -> "dependencies": { "@acme/ui": "workspace:*" }
+
+# run one package's build, plus everything downstream of it
+pnpm --filter @acme/ui... build</code></pre>
+
+<h2>When npm workspaces is the better choice</h2>
+<p>If your repo is two or three packages, everything is first-party, and you don't have a phantom-dependency problem, npm workspaces costs you nothing and adds no tool to onboard. It reads a <code>workspaces</code> array in the root <code>package.json</code>, links local packages, and shares one lockfile. Reach for pnpm when install time starts to hurt, when a hoisting bug bites, or when you want per-package task filtering. Not before.</p>
+
+<h2>Switching is cheap</h2>
+<p>Both resolve the same <code>package.json</code> semantics, so the move is mechanical: delete <code>node_modules</code> and <code>package-lock.json</code>, add a <code>pnpm-workspace.yaml</code> listing your package globs, replace <code>"*"</code> local versions with <code>workspace:*</code>, and run <code>pnpm install</code>. Budget an afternoon for a mid-size repo, mostly spent on scripts that assumed a hoisted <code>node_modules</code> layout.</p>
+
+<pre><code>rm -rf node_modules package-lock.json
+# add pnpm-workspace.yaml, then:
+pnpm install
+pnpm --filter web dev</code></pre>
+
+<p class="src">Notes from building tooling at <a href="https://github.com/fernforge">fernforge</a>. Mechanism details per <a href="https://pnpm.io/workspaces">pnpm.io</a>; npm workspaces shipped in npm v7 (2020).</p>
+</body>
+</html>

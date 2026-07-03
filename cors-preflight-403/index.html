@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORS preflight OPTIONS returns 403: how to fix it</title>
+<meta name="description" content="A CORS preflight 403 almost always means your auth middleware is rejecting the OPTIONS request. Browsers send preflights without credentials by design. Here's the fix.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/cors-preflight-403/">
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{max-width:44rem;margin:0 auto;padding:2.5rem 1.25rem 5rem;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fff}
+@media(prefers-color-scheme:dark){body{color:#e6e6e6;background:#141414}}
+h1{font-size:1.7rem;line-height:1.25;margin:0 0 1rem}
+h2{font-size:1.2rem;margin:2.2rem 0 .6rem}
+p,li{margin:.7rem 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:rgba(127,127,127,.15);padding:.1em .35em;border-radius:4px}
+pre{background:rgba(127,127,127,.12);padding:1rem;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5}
+pre code{background:none;padding:0}
+a{color:#0b66c3}@media(prefers-color-scheme:dark){a{color:#5aa9ef}}
+.lead{font-size:1.08rem}
+.src{color:#666;font-size:.85rem;margin-top:3rem;border-top:1px solid rgba(127,127,127,.25);padding-top:1rem}
+@media(prefers-color-scheme:dark){.src{color:#999}}
+</style>
+</head>
+<body>
+<h1>CORS preflight request returns 403: how do you fix it?</h1>
+
+<p class="lead">A 403 on the preflight almost always means your authentication middleware is rejecting the <code>OPTIONS</code> request before your CORS handler ever runs. Browsers send a preflight <code>OPTIONS</code> without cookies or an <code>Authorization</code> header, by design, per the Fetch standard the CORS protocol is defined in. So any middleware that demands credentials treats the preflight as an unauthenticated request and returns 401 or 403, and the real request never gets sent. The fix is to let <code>OPTIONS</code> through: mount your CORS handling before your auth check, or explicitly exempt <code>OPTIONS</code> from authentication. A correct preflight response is a 204 or 200 with <code>Access-Control-Allow-Origin</code>, <code>-Allow-Methods</code>, and <code>-Allow-Headers</code> that cover what the browser asked for in <code>Access-Control-Request-Method</code> and <code>Access-Control-Request-Headers</code>. If the 403 comes from a gateway (API Gateway, an S3 bucket policy, an ingress) instead of your app, the same rule holds: the preflight is being authorized like a real call when it shouldn't be.</p>
+
+<h2>Why the preflight has no credentials</h2>
+<p>A preflight fires only for requests the browser considers non-simple: a method other than GET/POST/HEAD, a custom header, or a <code>Content-Type</code> outside <code>application/x-www-form-urlencoded</code>, <code>multipart/form-data</code>, and <code>text/plain</code>. Add an <code>Authorization</code> header or send JSON and you've triggered one. The browser sends that <code>OPTIONS</code> probe with no cookies and no auth header on purpose, so your server can approve the actual request before the browser reveals anything. Guarding <code>OPTIONS</code> with auth breaks that handshake every time.</p>
+
+<h2>The fix, by framework</h2>
+<p>Order matters: CORS must run before auth. In Express, register the CORS middleware first and it will short-circuit <code>OPTIONS</code> with a 204 before your auth middleware sees it.</p>
+<pre><code>// Express — cors BEFORE any auth middleware
+app.use(cors({ origin: "https://app.example.com", credentials: true }));
+app.use(requireAuth);            // never runs for OPTIONS now
+
+// If you can't reorder, exempt preflights explicitly:
+app.use((req, res, next) =>
+  req.method === "OPTIONS" ? next() : requireAuth(req, res, next));</code></pre>
+
+<p>Same idea elsewhere. In FastAPI/Starlette, add <code>CORSMiddleware</code> so it wraps the auth dependency. In Spring Security, permit <code>OPTIONS</code> with <code>.requestMatchers(HttpMethod.OPTIONS).permitAll()</code>. Behind Nginx or an API gateway, answer <code>OPTIONS</code> at the proxy with a 204 and the CORS headers, and don't route it through the auth backend.</p>
+
+<h2>If it's still 403 after that</h2>
+<p>Two things left to check. First, the response headers have to match the request: if the browser's <code>Access-Control-Request-Headers</code> lists <code>authorization, content-type</code> and your <code>Access-Control-Allow-Headers</code> omits one, the preflight fails even at 200. Second, with <code>credentials: true</code> you cannot reflect <code>Access-Control-Allow-Origin: *</code>; you must echo the exact origin. A wildcard plus credentials is rejected by the browser, not the server, so the network tab shows the preflight succeeding while the request still blocks.</p>
+
+<p class="src">Notes from <a href="https://github.com/fernforge">fernforge</a>. Preflight and credentials behavior per the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN CORS reference</a> and the Fetch standard.</p>
+</body>
+</html>

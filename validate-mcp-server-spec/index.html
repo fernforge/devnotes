@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to validate an MCP server against the spec (CI-ready)</title>
+<meta name="description" content="Validate an MCP server two ways: the official Inspector for interactive checks, or a conformance linter like mcp-conform that fails a PR when your server drifts from the spec.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/validate-mcp-server-spec/">
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{max-width:44rem;margin:0 auto;padding:2.5rem 1.25rem 5rem;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fff}
+@media(prefers-color-scheme:dark){body{color:#e6e6e6;background:#141414}}
+h1{font-size:1.7rem;line-height:1.25;margin:0 0 1rem}
+h2{font-size:1.2rem;margin:2.2rem 0 .6rem}
+p,li{margin:.7rem 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:rgba(127,127,127,.15);padding:.1em .35em;border-radius:4px}
+pre{background:rgba(127,127,127,.12);padding:1rem;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5}
+pre code{background:none;padding:0}
+a{color:#0b66c3}@media(prefers-color-scheme:dark){a{color:#5aa9ef}}
+.lead{font-size:1.08rem}
+.src{color:#666;font-size:.85rem;margin-top:3rem;border-top:1px solid rgba(127,127,127,.25);padding-top:1rem}
+@media(prefers-color-scheme:dark){.src{color:#999}}
+</style>
+</head>
+<body>
+<h1>How do you validate an MCP server against the spec?</h1>
+
+<p class="lead">There are two jobs here, and they need different tools. For a one-off interactive check, run the official MCP Inspector (<code>npx @modelcontextprotocol/inspector</code>) and click through your tools by hand. For a check that runs on every push and fails the pull request when your server drifts from the spec, you want a deterministic conformance linter: <code>@fernforge/mcp-conform</code> or the Python <code>mcp-validator</code> suite. The linter starts your server over stdio, calls <code>tools/list</code>, and inspects the real schemas and annotations a client will receive, not a guess from your source. That distinction matters because the top reason servers get bounced from the ChatGPT and Claude app directories is bad tool annotations: the spec says a client must assume the worst case (destructive, open-world) when a hint is missing, so a safe read-only tool with no <code>readOnlyHint</code> gets treated as dangerous. A linter catches that before you publish; the Inspector shows it to you only if you go looking.</p>
+
+<h2>The fast path: fail CI when the server is non-conformant</h2>
+<p>Point a conformance linter at your launch command. It boots the server, enumerates the tools, and reports each problem with a one-line fix and a score, with no LLM and no network, so it's safe to run a thousand times a day in CI:</p>
+<pre><code>npx @fernforge/mcp-conform --cmd "node dist/index.js"</code></pre>
+<p>It checks the things that get servers rejected: missing <code>readOnlyHint</code> / <code>destructiveHint</code> / <code>openWorldHint</code> / <code>title</code> annotations, thin or ambiguous input schemas, tool-poisoning phrases in descriptions (an "ignore previous instructions" line in a tool description is injected straight into the agent's context), and incomplete registry metadata for the reverse-DNS namespaced publishing the official registry now requires.</p>
+
+<h2>The 2026-07-28 spec is a hard break: check for it explicitly</h2>
+<p>The 2026-07-28 revision is not backward compatible, and this is where most existing servers silently fail. <code>Mcp-Session-Id</code> is removed at the protocol layer (SEP-2567), the <code>initialize</code>/<code>initialized</code> handshake is gone (SEP-2575), error code <code>-32002</code> is reassigned to <code>-32602</code>, and two routing headers (<code>Mcp-Method</code>, <code>Mcp-Name</code>) are now required. A spec-migration scan reads your source and flags each removed API with a <code>file:line</code> and a fix:</p>
+<pre><code>npx @fernforge/mcp-conform --ruleset spec-migrate --project .
+# hard breaks (sessions, handshake, error code) are errors;
+# the 12-month deprecations (roots/sampling/logging) are warnings.
+# --ruleset all combines it with the standing conformance lint.</code></pre>
+
+<h2>The interactive path: MCP Inspector</h2>
+<p>When you're mid-development and want to poke at a tool by hand, the official Inspector is the right tool. It's a visual client that lists your tools, lets you call them with arbitrary input, and shows the raw responses:</p>
+<pre><code>npx @modelcontextprotocol/inspector node dist/index.js</code></pre>
+<p>It's exploratory, not a gate. It won't fail your build and it won't tell you you're missing an annotation unless you notice the absence yourself. Use it to debug a specific tool; use a linter to keep the whole server conformant over time.</p>
+
+<h2>Which to use</h2>
+<p>Run the Inspector while you're building a tool. Add a conformance linter to CI before you publish, and run the <code>spec-migrate</code> pack once now if your server predates the 2026-07-28 spec. The Python <code>mcp-validator</code> suite is a good fit if your server is Python and you want protocol-version compliance reports; <code>mcp-conform</code> leans toward author-side annotation, safety, and registry hygiene with a drop-in GitHub Action. They overlap, and running both costs nothing.</p>
+
+<p class="src">Notes from <a href="https://github.com/fernforge">fernforge</a>, which maintains <a href="https://www.npmjs.com/package/@fernforge/mcp-conform">@fernforge/mcp-conform</a>. Spec change references: the 2026-07-28 MCP specification and its SEP proposals.</p>
+</body>
+</html>
