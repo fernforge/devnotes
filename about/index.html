@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About devnotes and fernforge</title>
+<meta name="description" content="devnotes is a small collection of short, correct answers to specific development questions, published by fernforge, a shop that builds developer tools including Alchemy.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/about/">
+<style>
+:root{color-scheme:light dark;--bg:#ffffff;--fg:#1b1f24;--muted:#5b6573;--border:rgba(20,24,31,.12);--card:#ffffff;--card-hover:#f6f8fb;--accent:#2d6a4f;--accent-ink:#ffffff;--accent-weak:rgba(45,106,79,.1);--code-bg:rgba(20,24,31,.06);--header-bg:rgba(255,255,255,.85);--maxw:46rem;--radius:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1216;--fg:#e6e9ed;--muted:#98a2b0;--border:rgba(255,255,255,.13);--card:#161a20;--card-hover:#1b2027;--accent:#67d0a0;--accent-ink:#0f1216;--accent-weak:rgba(103,208,160,.15);--code-bg:rgba(255,255,255,.08);--header-bg:rgba(15,18,22,.85)}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+.topbar{position:sticky;top:0;z-index:10;background:var(--header-bg);backdrop-filter:saturate(150%) blur(10px);-webkit-backdrop-filter:saturate(150%) blur(10px);border-bottom:1px solid var(--border)}
+.bar{max-width:var(--maxw);margin:0 auto;padding:.7rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.brand{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;font-size:1.05rem;letter-spacing:-.02em;color:var(--fg);text-decoration:none}
+.brand svg{display:block}
+.brand .lg{stroke:var(--accent);fill:none}
+nav.pages{margin-left:auto;display:flex;flex-wrap:wrap;gap:.1rem}
+nav.pages a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.3rem .55rem;border-radius:7px;white-space:nowrap}
+nav.pages a:hover{color:var(--fg);background:var(--accent-weak)}
+nav.pages a[aria-current=page]{color:var(--accent);font-weight:600}
+main{max-width:var(--maxw);margin:0 auto;padding:2.4rem 1.25rem 3rem}
+h1{font-size:1.7rem;line-height:1.25;margin:0 0 1rem;letter-spacing:-.015em}
+h2{font-size:1.2rem;margin:2.2rem 0 .6rem;letter-spacing:-.01em}
+p,li{margin:.7rem 0}
+.lead{font-size:1.1rem}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:var(--code-bg);padding:.1em .35em;border-radius:5px}
+.src{color:var(--muted);font-size:.85rem;margin-top:3rem;border-top:1px solid var(--border);padding-top:1rem}
+footer{max-width:var(--maxw);margin:0 auto;padding:1.5rem 1.25rem 3rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:space-between}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="topbar">
+<div class="bar">
+<a class="brand" href="../" aria-label="devnotes home">
+<svg class="lg" width="22" height="26" viewBox="0 0 100 100" aria-hidden="true" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 90 Q68 50 52 10"/><path d="M53 78 Q44 65 36 63"/><path d="M53 78 Q62 65 70 63"/><path d="M57 55 Q49 44 42 43"/><path d="M57 55 Q65 44 72 43"/><path d="M57 33 Q51 25 46 24"/><path d="M57 33 Q63 25 68 24"/></svg>
+<span>devnotes</span>
+</a>
+<nav class="pages" aria-label="Notes">
+<a href="../">Home</a>
+<a href="./" aria-current="page">About</a>
+</nav>
+</div>
+</header>
+<main>
+<h1>About devnotes</h1>
+
+<p class="lead">devnotes is a small set of straight answers to specific development questions: pnpm or npm workspaces, the CORS preflight that keeps coming back 403, the git error you hit once a year and re-google every time. Each note answers the question in its first sentence, then explains why that's the answer. The point is to get you to the fix without a ten-minute read wrapped around it.</p>
+
+<h2>How the notes are written</h2>
+<p>One question per note. The answer leads, the reasoning follows, and where a claim rests on a spec or a standard the note links to the source so you can check it rather than take our word for it. We keep them short on purpose. A note earns its place by being correct and specific, not by covering every edge case someone might imagine, so we cut the parts you'd skip anyway.</p>
+
+<h2>Who publishes it</h2>
+<p>devnotes comes from fernforge, a small shop that builds developer tools. Our main product is <strong>Alchemy</strong>, a ruleset that gets AI to write prose a person would actually write. It goes after the tells that give machine text away: the em-dash pile-ups, the "not just X, it's Y" filler, words like "delve" and "seamless" that nobody says out loud. It ships three ways, so you can drop it into whatever you already use: the npm package <code>@fernforge/alchemy</code>, the PyPI package <code>alchemy-writing</code>, and an MCP server for wiring into an agent. Source and install steps are <a href="https://github.com/fernforge/alchemy">on GitHub</a>.</p>
+
+<p>We also maintain <code>mcp-conform</code>, a linter that checks an MCP server against the spec and fails a pull request when it drifts. It's on npm. If you found the note on validating an MCP server useful, that's the tool it points to.</p>
+
+<p class="src">devnotes and its tools are published by <a href="https://github.com/fernforge">fernforge</a>.</p>
+</main>
+<footer>
+<span>Built by <a href="https://github.com/fernforge">fernforge</a>.</span>
+<a href="../">devnotes home</a>
+</footer>
+</body>
+</html>
