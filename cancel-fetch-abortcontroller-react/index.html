@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pnpm vs npm workspaces: which to use for a monorepo (2026)</title>
-<meta name="description" content="Use pnpm once a monorepo grows past a few packages; npm workspaces is fine for a small repo. Why, and how the switch actually works.">
-<link rel="canonical" href="https://fernforge.github.io/devnotes/pnpm-vs-npm-workspaces/">
+<title>How to cancel a fetch request in a React useEffect</title>
+<meta name="description" content="Create an AbortController in the effect, pass its signal to fetch, and call abort() in the cleanup return. Swallow the AbortError so an intentional cancel isn't an error.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/cancel-fetch-abortcontroller-react/">
 <style>
 :root{color-scheme:light dark;--bg:#ffffff;--fg:#1b1f24;--muted:#5b6573;--border:rgba(20,24,31,.12);--card:#ffffff;--card-hover:#f6f8fb;--accent:#2d6a4f;--accent-ink:#ffffff;--accent-weak:rgba(45,106,79,.1);--code-bg:rgba(20,24,31,.06);--header-bg:rgba(255,255,255,.85);--maxw:46rem;--radius:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1216;--fg:#e6e9ed;--muted:#98a2b0;--border:rgba(255,255,255,.13);--card:#161a20;--card-hover:#1b2027;--accent:#67d0a0;--accent-ink:#0f1216;--accent-weak:rgba(103,208,160,.15);--code-bg:rgba(255,255,255,.08);--header-bg:rgba(15,18,22,.85)}}
@@ -60,42 +60,34 @@ footer a:hover{color:var(--accent)}
 </div>
 </header>
 <main>
-<h1>pnpm vs npm workspaces: which should you use for a monorepo?</h1>
+<h1>How do you cancel a fetch request in a React useEffect?</h1>
 
-<p class="lead">Use pnpm once your monorepo has more than a handful of packages; npm workspaces is the right call for a small repo where you'd rather not add another tool. The deciding factor isn't install speed, it's whether you want strict dependency isolation. pnpm gives every package only the dependencies it actually declared, so a package can't accidentally import something a sibling installed. npm workspaces hoists everything into one root <code>node_modules</code>, which is simpler until a phantom-dependency bug ships to production because a package used a library it never listed. pnpm also stores one copy of each package version in a global content-addressable store and hard-links it into each project, so a ten-package repo doesn't keep ten copies of React on disk. npm workspaces has shipped since npm v7 (October 2020) and covers the basics: shared install, symlinked local packages, one lockfile. It just stops there.</p>
+<p class="lead">Create an <code>AbortController</code> inside the effect, pass its <code>controller.signal</code> to <code>fetch</code>, and call <code>controller.abort()</code> in the function you return from the effect for cleanup. When an abort fires, fetch rejects with an <code>AbortError</code>; catch it and ignore it, since a deliberate cancel is not a real failure, so you don't set error state on it. Create a fresh controller on every effect run, because the cleanup from the previous run has already aborted the old one. This does two things. It prevents the "can't perform a state update on an unmounted component" warning, because the pending request is torn down before the component unmounts. And it kills stale-response races: when a dependency like a search term or an id changes, React runs cleanup for the old value before the new effect, so the in-flight request for the previous value is aborted and can't overwrite fresher data with a late reply. The controller is created per run and captured in the closure, so no ref is needed.</p>
 
-<h2>Where pnpm pulls ahead</h2>
-<p>Three things, in order of how often they actually matter:</p>
-<ul>
-<li><strong>Strictness.</strong> pnpm's <code>node_modules</code> is a symlink tree where each package sees only its declared deps. The class of bug where CI passes and prod breaks because of an undeclared dependency mostly disappears. This is the reason Vue, Vite, Nuxt, Astro, and Turborepo all default to pnpm, and the Vue team named it directly when they moved off Yarn.</li>
-<li><strong>Filtering.</strong> <code>--filter</code> scopes any command to one package and, optionally, everything that depends on it. Building or testing just the thing you touched is a one-liner.</li>
-<li><strong>Disk.</strong> The content-addressable store means a second project reusing the same dependency versions installs almost instantly and adds close to zero disk. On a large monorepo this is the difference between a few hundred megabytes and a few gigabytes.</li>
-</ul>
+<h2>The pattern</h2>
+<pre><code>useEffect(() =&gt; {
+  const controller = new AbortController();
 
-<h2>What that looks like</h2>
-<pre><code>// pnpm-workspace.yaml
-packages:
-  - "packages/*"
-  - "apps/*"
+  async function load() {
+    try {
+      const res = await fetch(`/api/items/${id}`, { signal: controller.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setItems(data);
+    } catch (err) {
+      if (err.name === "AbortError") return; // intentional cancel, ignore
+      setError(err);
+    }
+  }
 
-# reference a local package by its workspace version
-# package.json -> "dependencies": { "@acme/ui": "workspace:*" }
+  load();
+  return () =&gt; controller.abort(); // cleanup: cancel the in-flight request
+}, [id]);</code></pre>
 
-# run one package's build, plus everything downstream of it
-pnpm --filter @acme/ui... build</code></pre>
+<h2>Why each piece matters</h2>
+<p>The cleanup return runs on unmount and before every re-run of the effect, so <code>controller.abort()</code> tears down the previous request at exactly the right moments. The <code>AbortError</code> check is what keeps the cancel quiet: without it, aborting a request would set error state a moment before the component goes away or the next request lands, which is the bug you were trying to avoid. Declaring the controller inside the effect (not in a ref or outside) guarantees a new one per run, so an old cleanup never aborts the current request. The same <code>signal</code> works with axios and most modern data libraries, and <code>fetch</code> has supported it in browsers for years.</p>
 
-<h2>When npm workspaces is the better choice</h2>
-<p>If your repo is two or three packages, everything is first-party, and you don't have a phantom-dependency problem, npm workspaces costs you nothing and adds no tool to onboard. It reads a <code>workspaces</code> array in the root <code>package.json</code>, links local packages, and shares one lockfile. Reach for pnpm when install time starts to hurt, when a hoisting bug bites, or when you want per-package task filtering. Not before.</p>
-
-<h2>Switching is cheap</h2>
-<p>Both resolve the same <code>package.json</code> semantics, so the move is mechanical: delete <code>node_modules</code> and <code>package-lock.json</code>, add a <code>pnpm-workspace.yaml</code> listing your package globs, replace <code>"*"</code> local versions with <code>workspace:*</code>, and run <code>pnpm install</code>. Budget an afternoon for a mid-size repo, mostly spent on scripts that assumed a hoisted <code>node_modules</code> layout.</p>
-
-<pre><code>rm -rf node_modules package-lock.json
-# add pnpm-workspace.yaml, then:
-pnpm install
-pnpm --filter web dev</code></pre>
-
-<p class="src">Notes from building tooling at <a href="https://github.com/fernforge">fernforge</a>. Mechanism details per <a href="https://pnpm.io/workspaces">pnpm.io</a>; npm workspaces shipped in npm v7 (2020).</p>
+<p class="src">Notes from <a href="https://github.com/fernforge">fernforge</a>. Signal and AbortError behavior per the <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController">MDN AbortController reference</a>.</p>
 </main>
 <footer>
 <span>Built by <a href="https://github.com/fernforge">fernforge</a>.</span>

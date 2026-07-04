@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pnpm vs npm workspaces: which to use for a monorepo (2026)</title>
-<meta name="description" content="Use pnpm once a monorepo grows past a few packages; npm workspaces is fine for a small repo. Why, and how the switch actually works.">
-<link rel="canonical" href="https://fernforge.github.io/devnotes/pnpm-vs-npm-workspaces/">
+<title>Vitest vs Jest: which should you use?</title>
+<meta name="description" content="For a new project or any Vite-based stack, pick Vitest. Stay on Jest for a large legacy CommonJS codebase with deep mocking, and for React Native. Here's why.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/vitest-vs-jest/">
 <style>
 :root{color-scheme:light dark;--bg:#ffffff;--fg:#1b1f24;--muted:#5b6573;--border:rgba(20,24,31,.12);--card:#ffffff;--card-hover:#f6f8fb;--accent:#2d6a4f;--accent-ink:#ffffff;--accent-weak:rgba(45,106,79,.1);--code-bg:rgba(20,24,31,.06);--header-bg:rgba(255,255,255,.85);--maxw:46rem;--radius:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1216;--fg:#e6e9ed;--muted:#98a2b0;--border:rgba(255,255,255,.13);--card:#161a20;--card-hover:#1b2027;--accent:#67d0a0;--accent-ink:#0f1216;--accent-weak:rgba(103,208,160,.15);--code-bg:rgba(255,255,255,.08);--header-bg:rgba(15,18,22,.85)}}
@@ -60,42 +60,26 @@ footer a:hover{color:var(--accent)}
 </div>
 </header>
 <main>
-<h1>pnpm vs npm workspaces: which should you use for a monorepo?</h1>
+<h1>Vitest vs Jest: which should you use?</h1>
 
-<p class="lead">Use pnpm once your monorepo has more than a handful of packages; npm workspaces is the right call for a small repo where you'd rather not add another tool. The deciding factor isn't install speed, it's whether you want strict dependency isolation. pnpm gives every package only the dependencies it actually declared, so a package can't accidentally import something a sibling installed. npm workspaces hoists everything into one root <code>node_modules</code>, which is simpler until a phantom-dependency bug ships to production because a package used a library it never listed. pnpm also stores one copy of each package version in a global content-addressable store and hard-links it into each project, so a ten-package repo doesn't keep ten copies of React on disk. npm workspaces has shipped since npm v7 (October 2020) and covers the basics: shared install, symlinked local packages, one lockfile. It just stops there.</p>
+<p class="lead">For a new project, or any codebase already built on Vite, use Vitest; stay on Jest for a large legacy CommonJS codebase that leans on deep Jest mocking, and for React Native, which Vitest does not support. Vitest is ESM- and TypeScript-native: it compiles your TypeScript through Vite's esbuild pipeline, so there's no <code>ts-jest</code> or Babel transform layer to configure and no separate module system to reconcile. It reuses your existing <code>vite.config</code>, so a Vite app tests under the same resolver, aliases, and plugins it builds with. The API is close to a drop-in for Jest's (<code>describe</code>, <code>it</code>, <code>expect</code>, <code>vi</code> in place of <code>jest</code>), which keeps migration cheap. Jest still wins where its ecosystem is the point: a mature CommonJS app with heavy <code>jest.mock</code> usage, snapshot tooling built around it, or React Native, where Jest is the supported path. Both are actively maintained, so this is a fit question, not a dead-project question.</p>
 
-<h2>Where pnpm pulls ahead</h2>
-<p>Three things, in order of how often they actually matter:</p>
-<ul>
-<li><strong>Strictness.</strong> pnpm's <code>node_modules</code> is a symlink tree where each package sees only its declared deps. The class of bug where CI passes and prod breaks because of an undeclared dependency mostly disappears. This is the reason Vue, Vite, Nuxt, Astro, and Turborepo all default to pnpm, and the Vue team named it directly when they moved off Yarn.</li>
-<li><strong>Filtering.</strong> <code>--filter</code> scopes any command to one package and, optionally, everything that depends on it. Building or testing just the thing you touched is a one-liner.</li>
-<li><strong>Disk.</strong> The content-addressable store means a second project reusing the same dependency versions installs almost instantly and adds close to zero disk. On a large monorepo this is the difference between a few hundred megabytes and a few gigabytes.</li>
-</ul>
+<h2>Why Vitest is the default now</h2>
+<p>The momentum is measurable. In the State of JS 2024 survey, Vitest overtook Jest on developer satisfaction, and Jest's own maintainer has said publicly that Vitest is the better tool for many modern projects. That's an unusual thing for the incumbent's maintainer to say, and it reflects where the friction sits: Jest predates the ecosystem's move to ESM, so getting it to run modern ESM and TypeScript cleanly still means transform config and the occasional <code>transformIgnorePatterns</code> fight. Vitest starts from ESM and inherits your Vite setup instead. Independent 2026 benchmarks report a large gap in watch-mode and cold-start time in Vitest's favor, driven by esbuild transforms and Vite's on-demand module graph rather than a full pre-transform pass.</p>
 
-<h2>What that looks like</h2>
-<pre><code>// pnpm-workspace.yaml
-packages:
-  - "packages/*"
-  - "apps/*"
+<h2>The API is nearly the same</h2>
+<pre><code>// Jest
+import { foo } from "./foo";
+jest.mock("./foo");
+test("adds", () =&gt; { expect(1 + 1).toBe(2); });
 
-# reference a local package by its workspace version
-# package.json -> "dependencies": { "@acme/ui": "workspace:*" }
+// Vitest — same shapes, vi instead of jest
+import { describe, it, expect, vi } from "vitest";
+vi.mock("./foo");
+it("adds", () =&gt; { expect(1 + 1).toBe(2); });</code></pre>
+<p>With <code>globals: true</code> in the Vitest config you can even keep the implicit <code>describe</code>/<code>it</code>/<code>expect</code> globals, so many test files run untouched. The parts that don't port cleanly are the deep internals: custom Jest transformers, some <code>jest.mock</code> hoisting edge cases, and anything wired to Jest's module registry. If your suite depends on those, the migration is real work, and that's the case where staying on Jest is the honest answer.</p>
 
-# run one package's build, plus everything downstream of it
-pnpm --filter @acme/ui... build</code></pre>
-
-<h2>When npm workspaces is the better choice</h2>
-<p>If your repo is two or three packages, everything is first-party, and you don't have a phantom-dependency problem, npm workspaces costs you nothing and adds no tool to onboard. It reads a <code>workspaces</code> array in the root <code>package.json</code>, links local packages, and shares one lockfile. Reach for pnpm when install time starts to hurt, when a hoisting bug bites, or when you want per-package task filtering. Not before.</p>
-
-<h2>Switching is cheap</h2>
-<p>Both resolve the same <code>package.json</code> semantics, so the move is mechanical: delete <code>node_modules</code> and <code>package-lock.json</code>, add a <code>pnpm-workspace.yaml</code> listing your package globs, replace <code>"*"</code> local versions with <code>workspace:*</code>, and run <code>pnpm install</code>. Budget an afternoon for a mid-size repo, mostly spent on scripts that assumed a hoisted <code>node_modules</code> layout.</p>
-
-<pre><code>rm -rf node_modules package-lock.json
-# add pnpm-workspace.yaml, then:
-pnpm install
-pnpm --filter web dev</code></pre>
-
-<p class="src">Notes from building tooling at <a href="https://github.com/fernforge">fernforge</a>. Mechanism details per <a href="https://pnpm.io/workspaces">pnpm.io</a>; npm workspaces shipped in npm v7 (2020).</p>
+<p class="src">Notes from <a href="https://github.com/fernforge">fernforge</a>. Config and API details per the <a href="https://vitest.dev/guide/">Vitest guide</a>; satisfaction trend from the State of JS 2024 survey.</p>
 </main>
 <footer>
 <span>Built by <a href="https://github.com/fernforge">fernforge</a>.</span>

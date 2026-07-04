@@ -16,4 +16,24 @@
     <loc>https://fernforge.github.io/devnotes/validate-mcp-server-spec/</loc>
     <lastmod>2026-07-03</lastmod>
   </url>
+  <url>
+    <loc>https://fernforge.github.io/devnotes/vitest-vs-jest/</loc>
+    <lastmod>2026-07-03</lastmod>
+  </url>
+  <url>
+    <loc>https://fernforge.github.io/devnotes/bun-vs-node-production/</loc>
+    <lastmod>2026-07-03</lastmod>
+  </url>
+  <url>
+    <loc>https://fernforge.github.io/devnotes/npm-eresolve-dependency-tree/</loc>
+    <lastmod>2026-07-03</lastmod>
+  </url>
+  <url>
+    <loc>https://fernforge.github.io/devnotes/git-refusing-to-merge-unrelated-histories/</loc>
+    <lastmod>2026-07-03</lastmod>
+  </url>
+  <url>
+    <loc>https://fernforge.github.io/devnotes/cancel-fetch-abortcontroller-react/</loc>
+    <lastmod>2026-07-03</lastmod>
+  </url>
 </urlset>

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pnpm vs npm workspaces: which to use for a monorepo (2026)</title>
-<meta name="description" content="Use pnpm once a monorepo grows past a few packages; npm workspaces is fine for a small repo. Why, and how the switch actually works.">
-<link rel="canonical" href="https://fernforge.github.io/devnotes/pnpm-vs-npm-workspaces/">
+<title>Bun vs Node.js: which should you run in production?</title>
+<meta name="description" content="For a new project with no hard Node-only dependency, Bun is a reasonable production default. Choose Node for maximum compatibility, LTS guarantees, and mature observability.">
+<link rel="canonical" href="https://fernforge.github.io/devnotes/bun-vs-node-production/">
 <style>
 :root{color-scheme:light dark;--bg:#ffffff;--fg:#1b1f24;--muted:#5b6573;--border:rgba(20,24,31,.12);--card:#ffffff;--card-hover:#f6f8fb;--accent:#2d6a4f;--accent-ink:#ffffff;--accent-weak:rgba(45,106,79,.1);--code-bg:rgba(20,24,31,.06);--header-bg:rgba(255,255,255,.85);--maxw:46rem;--radius:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1216;--fg:#e6e9ed;--muted:#98a2b0;--border:rgba(255,255,255,.13);--card:#161a20;--card-hover:#1b2027;--accent:#67d0a0;--accent-ink:#0f1216;--accent-weak:rgba(103,208,160,.15);--code-bg:rgba(255,255,255,.08);--header-bg:rgba(15,18,22,.85)}}
@@ -60,42 +60,17 @@ footer a:hover{color:var(--accent)}
 </div>
 </header>
 <main>
-<h1>pnpm vs npm workspaces: which should you use for a monorepo?</h1>
+<h1>Bun vs Node.js: which should you run in production?</h1>
 
-<p class="lead">Use pnpm once your monorepo has more than a handful of packages; npm workspaces is the right call for a small repo where you'd rather not add another tool. The deciding factor isn't install speed, it's whether you want strict dependency isolation. pnpm gives every package only the dependencies it actually declared, so a package can't accidentally import something a sibling installed. npm workspaces hoists everything into one root <code>node_modules</code>, which is simpler until a phantom-dependency bug ships to production because a package used a library it never listed. pnpm also stores one copy of each package version in a global content-addressable store and hard-links it into each project, so a ten-package repo doesn't keep ten copies of React on disk. npm workspaces has shipped since npm v7 (October 2020) and covers the basics: shared install, symlinked local packages, one lockfile. It just stops there.</p>
+<p class="lead">Anthropic acquired Bun in December 2025 and runs it inside Claude Code, which tells you Bun is now production-grade for real workloads rather than a demo runtime. For a new project with no hard Node-only dependency, Bun is a reasonable default: it starts fast, bundles a test runner and package manager, and its Node-API compatibility sits above 95% as of the v1.3.x line, so most of the npm ecosystem just works. Choose Node.js when you need the last few points of that compatibility, especially native addons, or when you need the guarantees around it: a formal LTS release line, the broadest hiring pool, and mature observability agents (Datadog, New Relic, OpenTelemetry auto-instrumentation) that have years of Node-specific hardening. Bun is MIT-licensed, so licensing isn't the deciding factor. The honest split is compatibility and operational maturity for Node, developer ergonomics and cold-start speed for Bun. Pick by which of those your deployment actually cares about.</p>
 
-<h2>Where pnpm pulls ahead</h2>
-<p>Three things, in order of how often they actually matter:</p>
-<ul>
-<li><strong>Strictness.</strong> pnpm's <code>node_modules</code> is a symlink tree where each package sees only its declared deps. The class of bug where CI passes and prod breaks because of an undeclared dependency mostly disappears. This is the reason Vue, Vite, Nuxt, Astro, and Turborepo all default to pnpm, and the Vue team named it directly when they moved off Yarn.</li>
-<li><strong>Filtering.</strong> <code>--filter</code> scopes any command to one package and, optionally, everything that depends on it. Building or testing just the thing you touched is a one-liner.</li>
-<li><strong>Disk.</strong> The content-addressable store means a second project reusing the same dependency versions installs almost instantly and adds close to zero disk. On a large monorepo this is the difference between a few hundred megabytes and a few gigabytes.</li>
-</ul>
+<h2>The performance gap is real but narrows under load</h2>
+<p>Bun's headline is speed, and the synthetic numbers are eye-catching: a hello-world HTTP server can push roughly 4x the requests per second of the Node equivalent. Don't provision on that figure. Once a real request does what production requests do, query a database, wait on a downstream service, serialize a nontrivial JSON payload, the runtime stops being the bottleneck and the gap collapses toward parity. Your p99 latency is dominated by the database round-trip, not by which JavaScript engine parsed the handler. Bun's genuine, durable wins are elsewhere: process start time (which matters for serverless cold starts and short-lived jobs) and toolchain consolidation, since <code>bun install</code>, <code>bun test</code>, and the bundler replace a stack of separate tools.</p>
 
-<h2>What that looks like</h2>
-<pre><code>// pnpm-workspace.yaml
-packages:
-  - "packages/*"
-  - "apps/*"
+<h2>How to decide</h2>
+<p>Reach for Node.js when any of these is true: you depend on a native C++ addon that hasn't been validated on Bun, you need a supported LTS line for compliance or long-term maintenance, your on-call tooling assumes Node's process model, or your team hires against Node experience. Reach for Bun when you're starting fresh, your dependencies are pure JavaScript or already Bun-tested, cold-start latency is a cost line, and you'd rather ship one toolchain than assemble one. A pragmatic middle path exists too: use Bun as the local dev and test runner for its speed while deploying on Node, since the API surface overlaps heavily.</p>
 
-# reference a local package by its workspace version
-# package.json -> "dependencies": { "@acme/ui": "workspace:*" }
-
-# run one package's build, plus everything downstream of it
-pnpm --filter @acme/ui... build</code></pre>
-
-<h2>When npm workspaces is the better choice</h2>
-<p>If your repo is two or three packages, everything is first-party, and you don't have a phantom-dependency problem, npm workspaces costs you nothing and adds no tool to onboard. It reads a <code>workspaces</code> array in the root <code>package.json</code>, links local packages, and shares one lockfile. Reach for pnpm when install time starts to hurt, when a hoisting bug bites, or when you want per-package task filtering. Not before.</p>
-
-<h2>Switching is cheap</h2>
-<p>Both resolve the same <code>package.json</code> semantics, so the move is mechanical: delete <code>node_modules</code> and <code>package-lock.json</code>, add a <code>pnpm-workspace.yaml</code> listing your package globs, replace <code>"*"</code> local versions with <code>workspace:*</code>, and run <code>pnpm install</code>. Budget an afternoon for a mid-size repo, mostly spent on scripts that assumed a hoisted <code>node_modules</code> layout.</p>
-
-<pre><code>rm -rf node_modules package-lock.json
-# add pnpm-workspace.yaml, then:
-pnpm install
-pnpm --filter web dev</code></pre>
-
-<p class="src">Notes from building tooling at <a href="https://github.com/fernforge">fernforge</a>. Mechanism details per <a href="https://pnpm.io/workspaces">pnpm.io</a>; npm workspaces shipped in npm v7 (2020).</p>
+<p class="src">Notes from <a href="https://github.com/fernforge">fernforge</a>. Runtime and compatibility details per the <a href="https://bun.sh/docs">Bun documentation</a>; the acquisition was announced in December 2025.</p>
 </main>
 <footer>
 <span>Built by <a href="https://github.com/fernforge">fernforge</a>.</span>

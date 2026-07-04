@@ -55,10 +55,7 @@ footer a:hover{color:var(--accent)}
 <span>devnotes</span>
 </a>
 <nav class="pages" aria-label="Notes">
-<a href="./" aria-current="page">Home</a>
-<a href="./pnpm-vs-npm-workspaces/">pnpm vs npm</a>
-<a href="./cors-preflight-403/">CORS 403</a>
-<a href="./validate-mcp-server-spec/">MCP validation</a>
+<a href="./">Home</a>
 </nav>
 </div>
 </header>
@@ -67,20 +64,54 @@ footer a:hover{color:var(--accent)}
 <h1>devnotes</h1>
 <p>Short, correct answers to specific development questions.</p>
 </div>
+<h2>Comparisons</h2>
 <ul class="cards">
 <li><a class="card" href="./pnpm-vs-npm-workspaces/">
 <h2>pnpm vs npm workspaces: which should you use for a monorepo?</h2>
 <p>Use pnpm once your monorepo grows past a handful of packages; npm workspaces is the right call for a small repo. The deciding factor is strict dependency isolation, not install speed.</p>
 <span class="go">Read the note &rarr;</span>
 </a></li>
+<li><a class="card" href="./vitest-vs-jest/">
+<h2>Vitest vs Jest: which should you use?</h2>
+<p>For a new project or any Vite-based stack, use Vitest; stay on Jest for a large legacy CommonJS codebase with deep mocking, and for React Native.</p>
+<span class="go">Read the note &rarr;</span>
+</a></li>
+<li><a class="card" href="./bun-vs-node-production/">
+<h2>Bun vs Node.js: which should you run in production?</h2>
+<p>For a new project with no hard Node-only dependency, Bun is a reasonable default. Choose Node for maximum compatibility, LTS guarantees, and mature observability.</p>
+<span class="go">Read the note &rarr;</span>
+</a></li>
+</ul>
+
+<h2>Fixes</h2>
+<ul class="cards">
 <li><a class="card" href="./cors-preflight-403/">
 <h2>CORS preflight request returns 403: how do you fix it?</h2>
 <p>A 403 on the preflight almost always means your auth middleware is rejecting the OPTIONS request before your CORS handler runs. Let OPTIONS through.</p>
 <span class="go">Read the note &rarr;</span>
 </a></li>
+<li><a class="card" href="./npm-eresolve-dependency-tree/">
+<h2>npm ERESOLVE 'unable to resolve dependency tree': how do you fix it?</h2>
+<p>It's a peer-dependency conflict. The fast safe fix is npm install --legacy-peer-deps; the real fix is to read the conflict block and align the versions.</p>
+<span class="go">Read the note &rarr;</span>
+</a></li>
+<li><a class="card" href="./git-refusing-to-merge-unrelated-histories/">
+<h2>Git 'fatal: refusing to merge unrelated histories': how do you fix it?</h2>
+<p>The two branches share no common commit ancestor. Fix it with git pull --allow-unrelated-histories, but only if you actually mean to join the histories.</p>
+<span class="go">Read the note &rarr;</span>
+</a></li>
+</ul>
+
+<h2>Guides</h2>
+<ul class="cards">
 <li><a class="card" href="./validate-mcp-server-spec/">
 <h2>How do you validate an MCP server against the spec?</h2>
 <p>Two jobs, two tools: the official Inspector for interactive checks, and a conformance linter to fail a pull request when the server drifts from the spec.</p>
+<span class="go">Read the note &rarr;</span>
+</a></li>
+<li><a class="card" href="./cancel-fetch-abortcontroller-react/">
+<h2>How do you cancel a fetch request in a React useEffect?</h2>
+<p>Create an AbortController in the effect, pass its signal to fetch, and call abort() in the cleanup return. Swallow the AbortError so an intentional cancel isn't an error.</p>
 <span class="go">Read the note &rarr;</span>
 </a></li>
 </ul>
