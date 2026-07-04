@@ -1,0 +1,16 @@
+# devnotes
+
+> Short, correct answers to specific development questions. One page per question: the recommendation first, the reasoning under it. Published by fernforge.
+
+## Notes
+- [pnpm vs npm workspaces: which should you use for a monorepo?](https://fernforge.github.io/devnotes/pnpm-vs-npm-workspaces/)
+- [Vitest vs Jest: which should you use?](https://fernforge.github.io/devnotes/vitest-vs-jest/)
+- [Bun vs Node.js: which should you run in production?](https://fernforge.github.io/devnotes/bun-vs-node-production/)
+- [CORS preflight request returns 403: how do you fix it?](https://fernforge.github.io/devnotes/cors-preflight-403/)
+- [npm ERESOLVE "unable to resolve dependency tree": how do you fix it?](https://fernforge.github.io/devnotes/npm-eresolve-dependency-tree/)
+- [Git "fatal: refusing to merge unrelated histories": how do you fix it?](https://fernforge.github.io/devnotes/git-refusing-to-merge-unrelated-histories/)
+- [How do you validate an MCP server against the spec?](https://fernforge.github.io/devnotes/validate-mcp-server-spec/)
+- [How do you cancel a fetch request in a React useEffect?](https://fernforge.github.io/devnotes/cancel-fetch-abortcontroller-react/)
+
+## About
+- [About devnotes and fernforge](https://fernforge.github.io/devnotes/about/)
