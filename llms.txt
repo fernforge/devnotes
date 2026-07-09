@@ -10,6 +10,7 @@
 - [npm ERESOLVE "unable to resolve dependency tree": how do you fix it?](https://fernforge.github.io/devnotes/npm-eresolve-dependency-tree/)
 - [Git "fatal: refusing to merge unrelated histories": how do you fix it?](https://fernforge.github.io/devnotes/git-refusing-to-merge-unrelated-histories/)
 - [How do you validate an MCP server against the spec?](https://fernforge.github.io/devnotes/validate-mcp-server-spec/)
+- [TypeScript 7.0: what breaks, and how do you check before migrating?](https://fernforge.github.io/devnotes/typescript-7-what-breaks/)
 - [How do you cancel a fetch request in a React useEffect?](https://fernforge.github.io/devnotes/cancel-fetch-abortcontroller-react/)
 
 ## About
