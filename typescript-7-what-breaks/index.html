@@ -129,7 +129,7 @@ footer a:hover{color:var(--accent)}
 <main>
 <h1>TypeScript 7.0: what breaks, and how do you check before migrating?</h1>
 
-<p class="lead">TypeScript 7.0 shipped as the <code>latest</code> npm tag on 2026-07-08. The headline is <code>tsgo</code>, a native port of the compiler written in Go, and it's fast — 10x on most codebases. The part that trips teams up: <code>tsc --noEmit</code> (or <code>tsgo --noEmit</code>) passing tells you your source still type-checks, which was never the risk. The type system barely changed between 6 and 7; the implementation language did. The real breakage clusters in two places a type-check can't see, plus one place worth a look, not a panic.</p>
+<p class="lead">TypeScript 7.0 shipped as the <code>latest</code> npm tag on 2026-07-08. The headline is the native port of the compiler, rewritten in Go, and it's fast — 10x on most codebases. One naming note first: in the stable 7.0 release the binary is <code>tsc</code>; <code>tsgo</code> was the preview name and now only ships in the <code>@typescript/native-preview</code> nightlies. The part that trips teams up: <code>tsc --noEmit</code> passing tells you your source still type-checks, which was never the risk. The type system barely changed between 6 and 7; the implementation language did. The real breakage clusters in two places a type-check can't see, plus one place worth a look, not a panic.</p>
 
 <h2>Break #1: tsconfig flags that were deprecated, then removed</h2>
 <p>Options deprecated across the 5.x line are gone in 7.0. If <code>ignoreDeprecations</code> was your escape hatch for the warning, that flag is itself no longer accepted. Grep the whole tree, not just the root file — a monorepo usually inherits its tsconfig from a base file a dozen packages extend, so one stale option breaks every package at once:</p>
@@ -146,13 +146,13 @@ grep -rnE "from ['\"]typescript['\"]|require\(['\"]typescript['\"]\)" \
 <p>The fix is usually not "wait" — keep TypeScript 6.x installed side-by-side for the tools that need the API, and point 7.0 at your actual build and type-check.</p>
 
 <h2>Verify, don't panic: decorators and metadata</h2>
-<p>If you're on NestJS, TypeORM, MikroORM, or InversifyJS, you've probably seen the scary threads. The honest version: a clean TypeScript 6 build and a <code>tsgo</code> build should emit equivalent decorator metadata. This is a review step, not a fix step — build with 7.0, run your integration suite, boot the app. If DI resolves and your entities map, you're fine.</p>
+<p>If you're on NestJS, TypeORM, MikroORM, or InversifyJS, you've probably seen the scary threads. The honest version: a clean TypeScript 6 build and a TypeScript 7 build should emit equivalent decorator metadata. This is a review step, not a fix step — build with 7.0, run your integration suite, boot the app. If DI resolves and your entities map, you're fine.</p>
 
 <h2>The order that matters</h2>
 <ol>
 <li>Grep tsconfig for removed flags across the whole tree — cheapest, fails loudest, blocks everything else.</li>
 <li><code>npm ls typescript</code> plus a grep for Compiler-API consumers — decide side-by-side-6.x vs. wait, per tool.</li>
-<li><code>tsgo --noEmit</code> — now it means something, because you've cleared the noise it can't report on.</li>
+<li><code>tsc --noEmit</code> on 7.0 — now it means something, because you've cleared the noise it can't report on.</li>
 <li>Build and run the full test suite, especially for decorator/metadata frameworks.</li>
 </ol>
 <p><code>--noEmit</code> is step 3, not step 1. A CLI can run the first two checks across your repo and dependency tree in one pass, deterministically, no LLM key:</p>
