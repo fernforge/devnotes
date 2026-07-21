@@ -6,6 +6,73 @@
 <title>How to validate an MCP server against the spec (CI-ready)</title>
 <meta name="description" content="Validate an MCP server two ways: the official Inspector for interactive checks, or a conformance linter like mcp-conform that fails a PR when your server drifts from the spec.">
 <link rel="canonical" href="https://fernforge.github.io/devnotes/validate-mcp-server-spec/">
+<!-- fernforge:head -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="fernforge">
+<meta property="og:title" content="How to validate an MCP server against the spec (CI-ready)">
+<meta property="og:description" content="Validate an MCP server two ways: the official Inspector for interactive checks, or a conformance linter like mcp-conform that fails a PR when your server drifts from the spec.">
+<meta property="og:url" content="https://fernforge.github.io/devnotes/validate-mcp-server-spec/">
+<meta property="og:image" content="https://fernforge.github.io/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="fernforge">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to validate an MCP server against the spec (CI-ready)">
+<meta name="twitter:description" content="Validate an MCP server two ways: the official Inspector for interactive checks, or a conformance linter like mcp-conform that fails a PR when your server drifts from the spec.">
+<meta name="twitter:image" content="https://fernforge.github.io/og-image.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://fernforge.github.io/#organization",
+      "name": "fernforge",
+      "url": "https://fernforge.github.io/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://fernforge.github.io/fernforge-logo-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "description": "A small shop building developer tools, including Alchemy and mcp-conform.",
+      "sameAs": [
+        "https://github.com/fernforge",
+        "https://www.npmjs.com/org/fernforge"
+      ]
+    },
+    {
+      "@type": "TechArticle",
+      "@id": "https://fernforge.github.io/devnotes/validate-mcp-server-spec/#article",
+      "headline": "How to validate an MCP server against the spec (CI-ready)",
+      "description": "Validate an MCP server two ways: the official Inspector for interactive checks, or a conformance linter like mcp-conform that fails a PR when your server drifts from the spec.",
+      "url": "https://fernforge.github.io/devnotes/validate-mcp-server-spec/",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://fernforge.github.io/devnotes/validate-mcp-server-spec/"
+      },
+      "author": {
+        "@id": "https://fernforge.github.io/#organization"
+      },
+      "publisher": {
+        "@id": "https://fernforge.github.io/#organization"
+      },
+      "image": "https://fernforge.github.io/og-image.png",
+      "isPartOf": {
+        "@id": "https://fernforge.github.io/devnotes/#blog"
+      },
+      "inLanguage": "en",
+      "datePublished": "2026-07-03",
+      "dateModified": "2026-07-03"
+    }
+  ]
+}
+</script>
+<!-- /fernforge:head -->
 <style>
 :root{color-scheme:light dark;--bg:#ffffff;--fg:#1b1f24;--muted:#5b6573;--border:rgba(20,24,31,.12);--card:#ffffff;--card-hover:#f6f8fb;--accent:#2d6a4f;--accent-ink:#ffffff;--accent-weak:rgba(45,106,79,.1);--code-bg:rgba(20,24,31,.06);--header-bg:rgba(255,255,255,.85);--maxw:46rem;--radius:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1216;--fg:#e6e9ed;--muted:#98a2b0;--border:rgba(255,255,255,.13);--card:#161a20;--card-hover:#1b2027;--accent:#67d0a0;--accent-ink:#0f1216;--accent-weak:rgba(103,208,160,.15);--code-bg:rgba(255,255,255,.08);--header-bg:rgba(15,18,22,.85)}}
